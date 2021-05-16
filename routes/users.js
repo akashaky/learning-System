@@ -6,6 +6,8 @@ const userController = require('../controller/userController');
 router.post('/sign-up', userController.generateOTP);
 router.post('/create', userController.verifyOTP, userController.create);
 router.post('/sign-in', userController.signIn)
+
 router.get('/profile', userController.profile)
 
+router.use('/admin', require('./admin'));
 module.exports = router;

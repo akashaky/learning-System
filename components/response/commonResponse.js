@@ -29,7 +29,24 @@ function invalidUser (res) {
     }})                
 }
 
+function viedoUploaded(res){
+    return res.status(200).json({"status":{
+        "code":200,
+        "message": "Viedo Uploaded Successfully"
+    }})  
+}
+function fileRequired(res){
+    return res.status(400).json({
+        "status":{
+            "code":400,
+            "message": "File is required "
+        }
+    })
+}
+
 module.exports.invalidUser= invalidUser;
 module.exports.joiError = joiError;
 module.exports.successWithData = successWithData;
 module.exports.internalError = internalError;
+module.exports.viedoUploaded = viedoUploaded
+module.exports.fileRequired = fileRequired
