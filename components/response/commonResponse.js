@@ -44,9 +44,33 @@ function fileRequired(res){
     })
 }
 
+function newTestCreated(res){
+    return res.status(200).json({"status":{
+        "code":200,
+        "message": "Test Created Successfully"
+    }})
+}
+
+function newQuestionCreated(res, str1){
+    return res.status(200).json({"status":{
+        "code":200,
+        "message": str1
+    }})
+}
+
+function notFound(res){
+    return res.status(404).json({"status":{
+        "code":404,
+        "message": "Not found"
+    }})
+}
+
 module.exports.invalidUser= invalidUser;
 module.exports.joiError = joiError;
 module.exports.successWithData = successWithData;
 module.exports.internalError = internalError;
 module.exports.viedoUploaded = viedoUploaded
 module.exports.fileRequired = fileRequired
+module.exports.newTestCreated = newTestCreated
+module.exports.newQuestionCreated = newQuestionCreated
+module.exports.notFound = notFound

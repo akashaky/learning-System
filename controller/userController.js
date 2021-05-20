@@ -94,7 +94,7 @@ module.exports.signIn = async function(req, res){
         let user = await User.findOne({email: inputEmail})
         if(user == null){return commonResponses.invalidUser(res)}
         const ValidPassword = await bcrypt.compare(req.body.password, user.password);
-        if(!ValidPassword){commonResponses.invalidUser(res)}
+        if(!ValidPassword){return commonResponses.invalidUser(res)}
         const token = jwt.sign({_id: user._id, isAdmin: user.isAdmin,email:user.email, score: user.score, level:user.level}, 'jwtPrivateKey', {expiresIn:3600000});
         return commonResponses.successWithData(res, token);
     }catch(error){
@@ -104,12 +104,10 @@ module.exports.signIn = async function(req, res){
 }
 
 module.exports.profile = async function (req, res){
-    const token = req.header('x-auth-token');
     try {
-        const decoded = jwt.verify(token, 'jwtPrivateKey');
-        req.user = decoded;   
-        return commonResponses.successWithData(res, req.user)
-        return;
+        const user = await User.findById(req.user._id).select('-password -_id -__v -createdAt -updatedAt');
+        
+        return commonResponses.successWithData(res, user)
         } catch (err){
             return commonResponses.internalError(res)
         }   
@@ -117,12 +115,12 @@ module.exports.profile = async function (req, res){
 
 
 module.exports.auth = function (req, res, next){
-    const token = req.header('x-auth-token');
-    if(!token) return res.status(401).send('Accesss Denied. No token Provieded');
-    try {
-    const decoded = jwt.verify(token, 'jwtPrivateKey');
-    req.user = decoded;   
-    next();   
+    try { 
+        const token = req.header('x-auth-token');
+        if(!token) return res.status(401).send('Accesss Denied. No token Provieded');
+        const decoded = jwt.verify(token, 'jwtPrivateKey');
+        req.user = decoded;   
+        next();
     } catch (ex) {
     res.status(400).send('Invalid Token');
     }
