@@ -1,15 +1,19 @@
 const express = require('express');
+const bp = require("body-parser");
 const app = express();
-const port = 8000;
+const port = 8080;
 const db = require('./connection/mongoose');
+const cors = require('cors');
 
 
+app.use(bp.json());
+app.use(bp.urlencoded({ extended: true }));
 
-app.use(express.urlencoded());
 app.set('view engine', 'ejs');
 app.set('views','./views');
 app.use(express.static('assests'));
-
+app.use(cors());
+app.options('*', cors());
 
 
 

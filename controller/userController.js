@@ -10,12 +10,14 @@ const {checkEmail, checkCreateUser,checkSignIn} = require('../controller/inputVa
 
 module.exports.generateOTP = async function(req, res){    
     try{   
-        const { error } = await checkEmail.validateAsync(req.body);  
+        // const { error } = await checkEmail.validateAsync(req.body);  
         let user= await User.findOne({email: req.body.email});
         if(user) return res.status(401).json({"status":{
             "code":401,
             "message":"User with this email already exists"
         }})  
+       
+        console.log(req.body)
         if(!user){
             let userOtp = Math.floor(Math.random() * (999999 - 100000 + 1) + 100000);
             let createdOtp = await Otp.create({
@@ -27,6 +29,7 @@ module.exports.generateOTP = async function(req, res){
         }  
        
        }catch(error){
+           console.log(error)
             if(error.isJoi == true){return commonResponses.joiError(error,res)}
             return commonResponses.internalError(res);
         }

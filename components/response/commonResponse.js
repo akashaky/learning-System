@@ -12,7 +12,7 @@ async function successWithData(res,data){
 function internalError(res){
     return res.status(500).json({"status":{
         "code":500,
-        "message": "Internal server error"
+        "message": "Internal server errorsssss"
     }});
 }
 
@@ -65,6 +65,13 @@ function notFound(res){
     }})
 }
 
+function someMessage(res, output){
+    return res.status(401).json({"status":{
+        "code":401,
+        "message": output
+    }})
+}
+
 module.exports.invalidUser= invalidUser;
 module.exports.joiError = joiError;
 module.exports.successWithData = successWithData;
@@ -74,3 +81,4 @@ module.exports.fileRequired = fileRequired
 module.exports.newTestCreated = newTestCreated
 module.exports.newQuestionCreated = newQuestionCreated
 module.exports.notFound = notFound
+module.exports.someMessage = someMessage

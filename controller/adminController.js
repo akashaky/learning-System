@@ -1,6 +1,7 @@
 const Viedo = require('../models/viedos')
 const newTest = require('../models/newTest')
 const Question = require('../models/question')
+const AttemptTest = require('../models/attemptTest')
 const commonResponses = require('../components/response/commonResponse');
 module.exports.uploadViedo = function(req, res){
     try{
@@ -63,4 +64,11 @@ module.exports.addQuestion = async function(req,res){
         return commonResponses.internalError(res)
     }
     
+}
+
+
+module.exports.getTestResult = async function(req, res){
+    let allTestAttemptedStudent = await AttemptTest.find({testCode: req.body.testCode}).select('user testScore').populate('user', 'firstname email')
+    return commonResponses.successWithData(res, allTestAttemptedStudent)
+
 }
