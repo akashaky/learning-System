@@ -98,7 +98,7 @@ module.exports.signIn = async function(req, res){
         if(user == null){return commonResponses.invalidUser(res)}
         const ValidPassword = await bcrypt.compare(req.body.password, user.password);
         if(!ValidPassword){return commonResponses.invalidUser(res)}
-        const token = jwt.sign({_id: user._id, isAdmin: user.isAdmin,email:user.email, score: user.score, level:user.level}, 'jwtPrivateKey', {expiresIn:3600000});
+        const token = jwt.sign({_id: user._id, semester: user.semester, isAdmin: user.isAdmin,email:user.email, score: user.score, level:user.level}, 'jwtPrivateKey', {expiresIn:3600000});
         return commonResponses.successWithData(res, token);
     }catch(error){
         if(error.isJoi == true){return commonResponses.joiError(error, res)}

@@ -51,7 +51,7 @@ function newTestCreated(res){
     }})
 }
 
-function newQuestionCreated(res, str1){
+function successWithString(res, str1){
     return res.status(200).json({"status":{
         "code":200,
         "message": str1
@@ -79,6 +79,6 @@ module.exports.internalError = internalError;
 module.exports.viedoUploaded = viedoUploaded
 module.exports.fileRequired = fileRequired
 module.exports.newTestCreated = newTestCreated
-module.exports.newQuestionCreated = newQuestionCreated
+module.exports.successWithString = successWithString
 module.exports.notFound = notFound
 module.exports.someMessage = someMessage

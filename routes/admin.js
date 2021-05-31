@@ -6,6 +6,9 @@ const userController = require('../controller/userController')
 router.post('/upload-viedo', userController.auth, adminController.uploadViedo)
 router.post('/new-test', userController.auth, adminController.createTest)
 router.post('/add-question',userController.auth, adminController.addQuestion)
+router.post('/activate-test', userController.auth, adminController.activateTest)
+router.post('/deactivate-test', userController.auth, adminController.deactivateTest)
 router.get('/get-test-result', userController.auth, adminController.getTestResult)
+
 
 module.exports = router;

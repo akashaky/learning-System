@@ -22,6 +22,13 @@ const testSchema = new mongoose.Schema({
     testTime:{
         type:Number,
     },
+    isActive:{
+        type:Number,
+    },
+    semester:{
+        type:Number,
+        required:true,
+    },
     allQuestions:[{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Question'
