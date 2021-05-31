@@ -101,3 +101,13 @@ module.exports.deactivateTest = async function(req, res){
         return commonResponses.internalError(res)
     }
 }
+
+module.exports.getTestResult = async function(req, res){
+    try{
+        let ofTest = await AttemptTest.find({testCode: req.body.testCode}).populate('user').select('name email')
+        return commonResponses.successWithData(res, ofTest)
+
+    }catch(error){
+        return commonResponses.internalError(res)
+    }
+}
