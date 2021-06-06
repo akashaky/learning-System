@@ -2,6 +2,7 @@ const User = require('../models/user');
 const Otp = require('../models/otp')
 const otpMailer = require('../mailer/otpMailer');
 const jwt = require('jsonwebtoken')
+const config = require('config')
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
 const Joi = require('@hapi/joi');
@@ -10,14 +11,12 @@ const {checkEmail, checkCreateUser,checkSignIn} = require('../controller/inputVa
 
 module.exports.generateOTP = async function(req, res){    
     try{   
-        // const { error } = await checkEmail.validateAsync(req.body);  
+        const { error } = await checkEmail.validateAsync(req.body);  
         let user= await User.findOne({email: req.body.email});
         if(user) return res.status(401).json({"status":{
             "code":401,
             "message":"User with this email already exists"
         }})  
-       
-        console.log(req.body)
         if(!user){
             let userOtp = Math.floor(Math.random() * (999999 - 100000 + 1) + 100000);
             let createdOtp = await Otp.create({
@@ -29,7 +28,6 @@ module.exports.generateOTP = async function(req, res){
         }  
        
        }catch(error){
-           console.log(error)
             if(error.isJoi == true){return commonResponses.joiError(error,res)}
             return commonResponses.internalError(res);
         }
@@ -37,7 +35,7 @@ module.exports.generateOTP = async function(req, res){
 
 module.exports.verifyOTP = async function(req, res,next){
     try{
-        let isValidOTP = await Otp.findOne({otp: req.body.Otp});
+        let isValidOTP = await Otp.findOne({otp: req.body.otp});
         if(!isValidOTP) return res.status(401).json({"status":{
             "code":200,
             "message": "Invalid OTP"
@@ -49,21 +47,26 @@ module.exports.verifyOTP = async function(req, res,next){
 module.exports.create = async function(req, res){
     try{
         const {error} =  await checkCreateUser.validateAsync(req.body);        
-        let userEmail =  await Otp.findOne({otp:req.body.Otp}).select('email');
+        let userEmail =  await Otp.findOne({otp:req.body.otp}).select('email');
         let user= await User.findOne({email: userEmail.email});
         if(user) return res.status(400).json({"status":{
             "code":400,
             "message":"Your account has already been created"
         }})
         
+        if(req.body.password != req.body.confirmpassword){
+            return res.status(400).json({"status":{
+                "code":400,
+                "message":"Password not matched"
+            }})
+        }
         
          const salt = await bcrypt.genSalt(10);
          let ePassword = await bcrypt.hash(req.body.password, salt);
     
      
         let newUser = await User.create({
-            firstname: req.body.firstname,
-            lastname : req.body.lastname,            
+            fullname: req.body.fullname,            
             email: userEmail.email,
             password: ePassword,
             branch: req.body.branch, 
@@ -74,7 +77,7 @@ module.exports.create = async function(req, res){
             
         })         
 
-        const token = jwt.sign({_id: newUser._id, isAdmin: newUser.isAdmin, score: newUser.score, level:newUser.level}, 'jwtPrivateKey');
+        const token = jwt.sign({_id: newUser._id, isAdmin: newUser.isAdmin, score: newUser.score, level:newUser.level}, config.get('jwtPrivateKey'));
         return res.header('x-auth-token',token).status(200).json({
             "staus":{
                 "code": 200,
@@ -98,7 +101,7 @@ module.exports.signIn = async function(req, res){
         if(user == null){return commonResponses.invalidUser(res)}
         const ValidPassword = await bcrypt.compare(req.body.password, user.password);
         if(!ValidPassword){return commonResponses.invalidUser(res)}
-        const token = jwt.sign({_id: user._id, semester: user.semester, isAdmin: user.isAdmin,email:user.email, score: user.score, level:user.level}, 'jwtPrivateKey', {expiresIn:3600000});
+        const token = jwt.sign({_id: user._id, semester: user.semester, isAdmin: user.isAdmin,email:user.email, score: user.score, level:user.level, branch: user.branch}, config.get('jwtPrivateKey'), {expiresIn:3600000}); 
         return commonResponses.successWithData(res, token);
     }catch(error){
         if(error.isJoi == true){return commonResponses.joiError(error, res)}
@@ -106,10 +109,10 @@ module.exports.signIn = async function(req, res){
      }
 }
 
+
 module.exports.profile = async function (req, res){
     try {
         const user = await User.findById(req.user._id).select('-password -_id -__v -createdAt -updatedAt');
-        
         return commonResponses.successWithData(res, user)
         } catch (err){
             return commonResponses.internalError(res)
@@ -120,8 +123,8 @@ module.exports.profile = async function (req, res){
 module.exports.auth = function (req, res, next){
     try { 
         const token = req.header('x-auth-token');
-        if(!token) return res.status(401).send('Accesss Denied. No token Provieded');
-        const decoded = jwt.verify(token, 'jwtPrivateKey');
+        if(!token) return res.status(403).send('Accesss Denied. No token Provieded');
+        const decoded = jwt.verify(token, config.get('jwtPrivateKey'));
         req.user = decoded;   
         next();
     } catch (ex) {

@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const ejs = require('ejs');
 const path = require('path');
+const config = require('config')
 
 
 let transporter = nodemailer.createTransport({
@@ -10,7 +11,7 @@ let transporter = nodemailer.createTransport({
     secure: false,
     auth: {
         user : 'boostmindgame',
-        pass : 'Ava@041826'
+        pass : config.get('password')
     }
 });
 

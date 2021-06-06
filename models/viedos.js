@@ -1,8 +1,7 @@
 const mongoose = require('mongoose');
 const multer = require('multer');
 const path = require('path');
-const viedo_path = path.join('/uploads');
-
+const viedo_path = path.join('../client/src/uploads');
 const viedoSchema = new mongoose.Schema({
     viedo:{
         type:String,

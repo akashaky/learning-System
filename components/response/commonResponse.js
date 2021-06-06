@@ -58,16 +58,23 @@ function successWithString(res, str1){
     }})
 }
 
-function notFound(res){
+function notFound(res, output){
     return res.status(404).json({"status":{
         "code":404,
-        "message": "Not found"
+        "message": output
     }})
 }
 
 function someMessage(res, output){
     return res.status(401).json({"status":{
         "code":401,
+        "message": output
+    }})
+}
+
+function badRequest(res, output){
+    return res.status(400).json({"status":{
+        "code":400,
         "message": output
     }})
 }
@@ -82,3 +89,4 @@ module.exports.newTestCreated = newTestCreated
 module.exports.successWithString = successWithString
 module.exports.notFound = notFound
 module.exports.someMessage = someMessage
+module.exports.badRequest =badRequest

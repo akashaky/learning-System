@@ -4,27 +4,22 @@ const commonResponses = require('../components/response/commonResponse');
 const AttemptTest = require('../models/attemptTest')
 const Viedo = require('../models/viedos');
 const User = require('../models/user');
+const Subject = require('../models/subject')
+const {checkSubject} = require('./inputValidations/studentValidations')
 
+const Joi = require('@hapi/joi');
 
-
-module.exports.giveTest = async function(req, res){
-    try{
-        
-    }catch(error){
-        return commonResponses.internalError(res)
-    }
-}
 module.exports.getRandomQuiz = async function(req, res){
-    try{     
-        // let isAttempted = await AttemptTest.findOne({testCode: req.body.code, user: req.user._id})
-        // if(isAttempted != null){
-        //     return commonResponses.someMessage(res,'You have already attempted this Test')
-        // }
+    try{ 
+        let activeTest = await newTest.findOne({isActive:1, semester:req.user.semester})    
+        let isAttempted = await AttemptTest.findOne({testCode: activeTest.testCode, user: req.user._id})
+        if(isAttempted != null){
+            return commonResponses.someMessage(res,'You have already attempted this Test')
+        }
         let test = await newTest.findOne({semester:req.user.semester, isActive:1},{_id:0}).select('allQuestions attemptableQuestion totalQuestions').populate('allQuestions', 'qStatement option1 option2 option3 option4 correctAnswer')
         if(test == null) return commonResponses.someMessage(res,"There is no test available for you")
         let questionList =[]
         let isVisited=[]
-        console.log(test)
         for(var i=0;i< test.attemptableQuestion;i++)
         {
             isVisited[i]=false
@@ -38,12 +33,15 @@ module.exports.getRandomQuiz = async function(req, res){
                 count = count +1;
             }
         }
-        
+
         let attemptedTest = AttemptTest.create({
             user: req.user._id,
-            testCode: req.body.code,
-            testScore: 0
+            testCode: activeTest.testCode,
+            testScore: 0,
+            branch: req.user.branch,
+            semester: req.user.semester
         })
+        
         return commonResponses.successWithData(res,questionList)    
     }catch(error){
         console.log(error)
@@ -55,26 +53,25 @@ module.exports.submitQuiz = async function(req, res){
     try{
         let answers = req.body.answers;
         let correctAnswers = 0;
-        for(var i=0;i<answers.length();i++)
+        for(var i=0;i<answers.length;i++)
         {
-            let qId = answers[i]._id
-            let getQuestion = await Question.findById(qId);
-            if(getQuestion.correctAnswer == ans[i].ans){
+            let qId = answers[i].id
+            var getQuestion = await Question.findById(qId);
+            if(getQuestion.correctAnswer == answers[i].ans){
                 correctAnswers ++;
             }
         }
         //Updating overall score
         let user = await User.findById(req.user._id);
-        user.score = user.score + correctAnswer;
+        user.score = user.score + correctAnswers;
         let updatedUser = await user.save()
 
-        //Updating current test Score
+        // Updating current test Score
         let currentTestDetail = await AttemptTest.findOne({user: req.user._id})
-        currentTestDetail.testScore = correctAnswer;
+        currentTestDetail.testScore = correctAnswers;
         let updatedData = await currentTestDetail.save()
 
-        
-        return commonResponses.successWithString(res, `Your score in the quiz is ${correctAnswer} out of ${answers.length()}`)
+        return commonResponses.successWithString(res, `Hello! ${user.fullname} your score in the quiz is ${correctAnswers} out of ${req.body.lenght}`)
     }catch(error){
         console.log(error)
         return commonResponses.internalError(res)
@@ -86,11 +83,31 @@ module.exports.submitQuiz = async function(req, res){
 
 module.exports.goToCourse = async function(req, res){
     try{
-        let allContents =  await Viedo.find({semester: req.user.semester, subject: req.body.subject}).select('viedo displayName');
-        return commonResponses.successWithData(res, allContents);
+        const { error } = await checkSubject.validateAsync(req.body);  
+        let allContents =  await Viedo.find({semester: req.user.semester, subject: req.body.data}).select('viedo displayName');        return commonResponses.successWithData(res, allContents);
     }catch(error){
-        console.log(error)
+         if(error.isJoi == true){return commonResponses.joiError(error,res)} 
         return commonResponses.internalError(res)
+    }
+
+}
+
+module.exports.getSpecificSubjects = async function(req, res){
+    try{
+        let allSubjects = await Subject.find({branch: req.user.branch, semester: req.user.semester}).select('subjectName subjectCode')
+        let toSend = []
+        for(var i=0;i<allSubjects.length;i++){
+           var currentSubject = {
+            "id": allSubjects[i]._id,
+            "label": allSubjects[i].subjectName,
+            'value': allSubjects[i].subjectCode
+            }
+            toSend.push(currentSubject)          
+        }
+        return commonResponses.successWithData(res, toSend)
+    }catch(error){
+        return commonResponses.internalError(res)
+
     }
 
 }

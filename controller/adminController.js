@@ -3,32 +3,51 @@ const newTest = require('../models/newTest')
 const Question = require('../models/question')
 const AttemptTest = require('../models/attemptTest')
 const commonResponses = require('../components/response/commonResponse');
-module.exports.uploadViedo = function(req, res){
+const Subject = require('../models/subject')
+const {checkUploadVideo, checkCreateTest, checkAddQuestion,checkTest,checkCreateSubject} = require('./inputValidations/adminValidations')
+const Joi = require('@hapi/joi');
+
+
+
+module.exports.uploadViedo = async function(req, res){
     // if(req.user.isAdmin == 0) return commonResponses.someMessage(res, "Only admin can add viedos")
     try{
-        Viedo.uploadedViedo(req, res, async function(err){ 
+
+        
+        Viedo.uploadedViedo(req, res, async function(err){
             if(req.file == undefined){
                 return commonResponses.fileRequired(res)
             }
             
-            var uploadViedo = Viedo.viedoPath + '/' +  req.file.filename    
+             var uploadViedo = req.file.filename  
+             try{
+                const { error } = await checkUploadVideo.validateAsync(req.body);   
+             }catch(error){
+                if(error.isJoi == true){return commonResponses.joiError(error,res)} 
+             }
              let newViedo = await Viedo.create({
                  user: req.user._id,
                  semester: req.body.semester,
                  subject: req.body.subject,
                  viedo: uploadViedo,
-                 displayName: req.body.displayName
+                 displayName: req.body.displayName,
+                 branch: req.body.branch
             });
             return commonResponses.viedoUploaded(res)
         })
     }catch(error){
-        
+        if(error.isJoi == true){return commonResponses.joiError(error,res)} 
         return commonResponses.internalError(res)
     }
 }
 
 module.exports.createTest = async function(req, res){
+
+    // if(req.user.isAdmin == 0) return commonResponses.someMessage(res, "Only admin can add test")
     try{
+        const { error } = await checkCreateTest.validateAsync(req.body); 
+        let someTest = await newTest.findOne({testCode: req.body.testCode})
+        if(someTest != null) return commonResponses.badRequest(res,'Test with this code already exisits')
         let newTests = await newTest.create({
             testName: req.body.testName,
             testCode: req.body.testCode,
@@ -36,18 +55,23 @@ module.exports.createTest = async function(req, res){
             attemptableQuestion: req.body.attemptableQuestion,
             testTime: req.body.testTime,
             semester: req.body.semester,
-            isActive:0
+            isActive:0,
+            branch: req.body.branch
+            
        });
        return commonResponses.newTestCreated(res)
     }catch(error){
+        if(error.isJoi == true){return commonResponses.joiError(error,res)} 
         return commonResponses.internalError(res)
     }
 }
 
 module.exports.addQuestion = async function(req,res){
+    // if(req.user.isAdmin == 0) return commonResponses.someMessage(res, "Only admin can add questions")
     try{
+        const { error } = await checkAddQuestion.validateAsync(req.body); 
         let toTest = await newTest.findOne({testCode: req.body.testCode})
-        if(toTest == null) return commonResponses.notFound(res)
+        if(toTest == null) return commonResponses.notFound(res, 'Test with this test code does exits')
         let newQuestion = await Question.create({
             qStatement: req.body.qStatement,
             option1: req.body.option1,
@@ -63,51 +87,101 @@ module.exports.addQuestion = async function(req,res){
         
         return commonResponses.successWithString(res,'Question Added')
     }catch(error){
+        if(error.isJoi == true){return commonResponses.joiError(error,res)} 
         return commonResponses.internalError(res)
     }
     
 }
 
-
-module.exports.getTestResult = async function(req, res){
-    let allTestAttemptedStudent = await AttemptTest.find({testCode: req.body.testCode}).select('user testScore').populate('user', 'firstname email')
-    return commonResponses.successWithData(res, allTestAttemptedStudent)
-
-}
-
 module.exports.activateTest = async function(req,res){
+    // if(req.user.isAdmin == 0) return commonResponses.someMessage(res, "Only admin can activate test")
     try{
+        const { error } = await checkTest.validateAsync(req.body); 
         let test = await newTest.findOne({testCode: req.body.testCode})
-        if(test == null) return commonResponses.notFound(res)
+        if(test == null) return commonResponses.notFound(res, 'Test with this test code does exits')
         test.isActive = 1
         let saveTest = await test.save()
         return commonResponses.successWithString(res,'Test is Active Now')
       
-    }catch(err){
-        console.log(err)
+    }catch(error){
+        console.log(error)
+        if(error.isJoi == true){return commonResponses.joiError(error,res)} 
         return commonResponses.internalError(res)
     }
 }
 
 
 module.exports.deactivateTest = async function(req, res){
+    // if(req.user.isAdmin == 0) return commonResponses.someMessage(res, "Only admin can deactivate test")
     try{
+        const { error } = await checkTest.validateAsync(req.body); 
         let test = await newTest.findOne({testCode: req.body.testCode})
-        if(test == null) return commonResponses.notFound(res)
+        if(test == null) return commonResponses.notFound(res, 'Test with this test code does exits')
         test.isActive = 0
         let saveTest = await test.save()
         return commonResponses.successWithString(res,'Test is No more Active now')
-    }catch(err){
+    }catch(error){
+        if(error.isJoi == true){return commonResponses.joiError(error,res)} 
         return commonResponses.internalError(res)
     }
 }
 
 module.exports.getTestResult = async function(req, res){
-    try{
-        let ofTest = await AttemptTest.find({testCode: req.body.testCode}).populate('user').select('name email')
-        return commonResponses.successWithData(res, ofTest)
+    // if(req.user.isAdmin == 0) return commonResponses.someMessage(res, "Only admin can get test result")
+    try{    
+        const { error } = await checkTest.validateAsync(req.body);   
+        let test = await newTest.findOne({testCode: req.body.testCode})
+        if(test == null) return commonResponses.notFound(res, 'Test with this test code does exits')  
+        let ofTest = await AttemptTest.find({testCode: req.body.testCode},{_id:0}).select('testScore user').populate('user', 'fullname email')
+        var toSend=[]
+        for(var i=0; i<ofTest.length;i++){
+            let currentData = {
+                "fullname": ofTest[i].user.fullname,
+                "email": ofTest[i].user.email,
+                "testScore": ofTest[i].testScore
+            }
+            toSend.push(currentData)        }
 
+        return commonResponses.successWithData(res, toSend)
+    }catch(error){
+        if(error.isJoi == true){return commonResponses.joiError(error,res)} 
+        return commonResponses.internalError(res)
+    }
+}
+
+module.exports.createSubject= async function(req, res){
+    if(req.user.isAdmin == 0) return commonResponses.someMessage(res, "Only admin can create subject")
+    try{
+        const { error } = await checkCreateSubject.validateAsync(req.body);   
+        let newSubject = await Subject.create({
+            user: req.user,
+            branch: req.body.branch,
+            semester: req.body.semester,
+            subjectName: req.body.subjectName,
+            subjectCode: req.body.subjectCode
+        })
+        return commonResponses.successWithString(res, "Subject created Successfully")
+    }catch(error){
+        if(error.isJoi == true){return commonResponses.joiError(error,res)} 
+        return commonResponses.internalError(res)
+    }
+}
+
+module.exports.getSubjects = async function(req, res){
+    if(req.user.isAdmin == 0) return commonResponses.someMessage(res, "Only admin get subjects")
+    try{
+        let allSubjects = await Subject.find().select('subjectName subjectCode')
+        let toSend = []
+        for(var i=0;i<allSubjects.length;i++){
+           let currentSubject = {
+            "value": allSubjects[i].subjectCode,
+            "label": allSubjects[i].subjectName
+            }
+            toSend.push(currentSubject)          
+        }
+        return commonResponses.successWithData(res, toSend)
     }catch(error){
         return commonResponses.internalError(res)
     }
+
 }

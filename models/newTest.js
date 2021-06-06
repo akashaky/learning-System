@@ -8,25 +8,25 @@ const testSchema = new mongoose.Schema({
         required:true
     },
     testCode:{
-        type:Number,
+        type:String,
         required:true
     },
     totalQuestions:{
-        type:Number,
+        type:String,
         required:true,
     },
     attemptableQuestion:{
-        type:Number,
+        type:String,
         required:true,
     },
     testTime:{
-        type:Number,
+        type:String,
     },
     isActive:{
-        type:Number,
+        type:String,
     },
     semester:{
-        type:Number,
+        type:String,
         required:true,
     },
     allQuestions:[{
